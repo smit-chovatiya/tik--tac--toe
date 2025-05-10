@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tilt+Warp&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <h1>Tic-Tac-Toe</h1>
+
+
+    <div style="display: flex; width: 95vw; position: relative;">
+        <p id="userCont">You : <span id="user"></span></p>
+        <p style="position: absolute; right: 0;" id="oppNameCont">Opponent : <span id="oppName"></span></p>
+
+    </div>
+    <br>
+    <p id="valueCont">You are plaing as <span id="value"></span></p>
+    <br>
+    <p id="whosTurn">X's Turn</p>
+    <div>
+        <p style="font-size: 1.2rem;" id="enterName">Enter your name : </p>
+
+        <input type="text" placeholder="Name" id="name" autocomplete="off">
+    </div>
+    <button id="find">Search for a player</button>
+    <img id="loading" src="loading.gif" alt="">
+
+    <div id="bigcont">
+        <div id="cont">
+            <button id="btn0" class="btn"></button>
+            <button id="btn1" class="btn"></button>
+            <button id="btn2" class="btn"></button>
+            <button id="btn3" class="btn"></button>
+            <button id="btn4" class="btn"></button>
+            <button id="btn5" class="btn"></button>
+            <button id="btn6" class="btn"></button>
+            <button id="btn7" class="btn"></button>
+            <button id="btn8" class="btn"></button>
+        </div>
+    </div>
+    <p id="waiting">Waiting for Second Player</p>
+
+
+</body>
+<script src="/socket.io/socket.io.js"></script>
+
+
+<script>
+    document.getElementById("loading").style.display = "none"
+    document.getElementById("bigcont").style.display = "none"
+    document.getElementById("userCont").style.display = "none"
+    document.getElementById("oppNameCont").style.display = "none"
+    document.getElementById("valueCont").style.display = "none"
+    document.getElementById("whosTurn").style.display = "none"
+
+    const socket = io();
+
+    let name;
+    let playerSign;
+
+    document.getElementById('find').addEventListener("click", function () {
+        name = document.getElementById("name").value
+        document.getElementById("user").innerText = name
+        if (name == null || name == '') {
+            alert("Please enter a name")
+        }
+        else {
+
+            socket.emit("find", { name: name })
+
+            // document.getElementById("loading").style.display = "block"
+            document.getElementById("find").disabled = true;
+
+        }
+    })
+
+
+
+    socket.on("gameStart", (e) => {
+        let oppName
+        let value
+        // console.log('Games data:',e);
+        // console.log(e.players.sing);
+
+        // playerSign=e.players.map(player=>player.sing);
+        // console.log('Sing are:',playerSign);
+        // console.log(playerSign,"L");
+        // let allPlayersArray = e.allPlayers
+        // console.log("html",allPlayersArray)
+            // if(e.players[0].name===name){
+            //     oppName=e.players[1].name;
+            // }
+            // else{
+            //     oppName=e.players[0].name;
+            // }
+
+
+            let players=e.players;
+            players.forEach(player=>{
+                if(player.name===name){
+                    playerSign=player.sign;
+                }
+                else{
+                    oppName=player.name;
+                }
+            })
+
+
+            // console.log('Player sign:',playerSign);
+            // console.log('oppname are :',oppName);
+            document.getElementById("userCont").style.display = "block"
+            document.getElementById("oppNameCont").style.display = "block"
+            document.getElementById("valueCont").style.display = "block"
+            document.getElementById("loading").style.display = "none"
+            document.getElementById("name").style.display = "none"
+            document.getElementById("find").style.display = "none"
+            document.getElementById('waiting').style.display="none"
+            document.getElementById("enterName").style.display = "none"
+            document.getElementById("bigcont").style.display = "block"
+            document.getElementById("whosTurn").style.display = "block"
+            document.getElementById("whosTurn").innerText = `${playerSign}'s Turn`
+
+        
+        document.getElementById("oppName").innerText = oppName
+        document.getElementById("value").innerText = playerSign
+
+
+    })
+
+    document.querySelectorAll(".btn").forEach(e => {
+        e.addEventListener("click", function () {
+            let value = document.getElementById("value").innerText
+            e.innerText = value
+
+            socket.emit("playing", { value: value, id: e.id, name: name })
+
+        });
+    });
+
+
+    socket.on('updateBoard',(e)=>{
+        const {board,playerIndex}=e;
+        board.forEach((btn,index)=>{
+            const btn1=document.getElementById(`btn${index}`);
+            console.log('button are:',btn1);
+            btn1.innerText=btn.sign;
+            btn1.disabled=btn.sign!=='';
+        });
+        
+        const currentplayer=e.playerIndex === 0 ? 'X' : 'O';
+        document.getElementById('whosTurn')=currentplayer;
+    })
+
+
+    socket.on('gameOver',(e)=>{
+        setTimeout(()=>{
+
+            if(e.data=='Winner'){
+                const isWinner = e.winningPlayer === name;
+                if (isWinner) {
+                alert(`🎉 Congratulations! You Won as ${e.winner}!`);
+            } else {
+                alert(`😞 You Lost! ${e.winningPlayer} Won as ${e.winner}.`);
+            }
+            }
+            else if(e.data=='Draw'){
+                alert("It's a Draw!");
+            }
+            location.reload();
+
+        },1000);
+    });
+
+   
+
+
+
+</script>
+
+</html>
